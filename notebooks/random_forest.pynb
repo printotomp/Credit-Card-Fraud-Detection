@@ -1,0 +1,7 @@
+- Data exploration: histograms, correlation heatmap
+- Outlier analysis and class imbalance check
+- Model training with RandomForestClassifier
+- Evaluation: accuracy, precision, recall, F1-score, MCC
+- Confusion matrix visualization
+- Tree visualization using export_graphviz and pydot
+- Ethical framing: feature importance, auditability
