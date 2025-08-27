@@ -1,7 +1,82 @@
 - Data exploration: histograms, correlation heatmap
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib import gridspec
+
+# Load dataset
+df = pd.read_csv("E:\\UEL\\DS7010\\creditcard.csv")
+
+# Histograms for each feature
+features = df.columns[:-1]  # Exclude 'Class'
+plt.figure(figsize=(12, 28))
+gs = gridspec.GridSpec(len(features), 1)
+
+for i, col in enumerate(features):
+    ax = plt.subplot(gs[i])
+    sns.histplot(df[col][df.Class == 0], bins=50, color='blue', label='Non-Fraud', stat='density', kde=True)
+    sns.histplot(df[col][df.Class == 1], bins=50, color='red', label='Fraud', stat='density', kde=True)
+    ax.set_title(f'Feature: {col}')
+    ax.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Correlation heatmap
+plt.figure(figsize=(12, 9))
+corr_matrix = df.corr()
+sns.heatmap(corr_matrix, cmap='coolwarm', annot=False, fmt='.2f', square=True, linewidths=0.5)
+plt.title("Correlation Heatmap")
+plt.show()
+
+
 - Outlier analysis and class imbalance check
+# Class distribution
+fraud_count = df['Class'].value_counts()[1]
+nonfraud_count = df['Class'].value_counts()[0]
+fraud_ratio = fraud_count / nonfraud_count
+
+print(f"Fraud cases: {fraud_count}")
+print(f"Valid transactions: {nonfraud_count}")
+print(f"Outlier fraction (Fraud/Non-Fraud): {fraud_ratio:.6f}")
+print(f"Fraud percentage: {round(fraud_count / len(df) * 100, 2)}%")
+
+# Amount distribution comparison
+plt.figure(figsize=(10, 6))
+sns.histplot(df[df.Class == 0]['Amount'], bins=50, color='blue', label='Non-Fraud', kde=True)
+sns.histplot(df[df.Class == 1]['Amount'], bins=50, color='red', label='Fraud', kde=True)
+plt.title("Transaction Amount Distribution")
+plt.xlabel("Amount")
+plt.legend()
+plt.show()
+
 - Model training with RandomForestClassifier
+rfc = RandomForestClassifier()
+rfc.fit(X_train, Y_train)
+
 - Evaluation: accuracy, precision, recall, F1-score, MCC
+acc = accuracy_score(Y_test, y_pred)
+prec = precision_score(Y_test, y_pred)
+rec = recall_score(Y_test, y_pred)
+f1 = f1_score(Y_test, y_pred)
+MCC = matthews_corrcoef(Y_test, y_pred)
+
+from sklearn.metrics import roc_auc_score
+roc_auc = roc_auc_score(Y_test, rfc.predict_proba(X_test)[:,1])
+print("ROC AUC Score:", roc_auc)
+
+
 - Confusion matrix visualization
+sns.heatmap(conf_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True, fmt="d")
+
 - Tree visualization using export_graphviz and pydot
+tree = rfc.estimators_[5]
+export_graphviz(tree, out_file='tree.dot', feature_names=feature_list, rounded=True, precision=1)
+(graph,) = pydot.graph_from_dot_file('tree.dot')
+display(Image(graph.create_png()))
+
 - Ethical framing: feature importance, auditability
+Random Forest offers robust performance in fraud detection but lacks full interpretability. To mitigate this, we visualize individual trees and track feature importance.
+Evaluation includes fairness-aware metrics like precision, recall, and MCC to ensure balanced performance across classes. 
+Future work will explore SHAP values and bias mitigation strategies to enhance transparency and trustworthiness.
+
