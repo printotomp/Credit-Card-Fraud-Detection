@@ -1,13 +1,27 @@
-- Data exploration: histograms, correlation heatmap
+#  Fraud Detection with Random Forest Classifier
+# Purpose: Explore, train, and evaluate a fraud detection model using Random Forest with fairness-aware framing
+
+#  1. Import Libraries
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import gridspec
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    matthews_corrcoef, roc_auc_score, confusion_matrix, classification_report
+)
+from sklearn.tree import export_graphviz
+import pydot
+from IPython.display import Image
+import warnings
+warnings.filterwarnings("ignore")
 
-# Load dataset
+#  2. Load Dataset
 df = pd.read_csv("E:\\UEL\\DS7010\\creditcard.csv")
 
-# Histograms for each feature
+#  3. Data Exploration: Histograms
 features = df.columns[:-1]  # Exclude 'Class'
 plt.figure(figsize=(12, 28))
 gs = gridspec.GridSpec(len(features), 1)
@@ -22,16 +36,14 @@ for i, col in enumerate(features):
 plt.tight_layout()
 plt.show()
 
-# Correlation heatmap
+#  4. Correlation Heatmap
 plt.figure(figsize=(12, 9))
 corr_matrix = df.corr()
 sns.heatmap(corr_matrix, cmap='coolwarm', annot=False, fmt='.2f', square=True, linewidths=0.5)
 plt.title("Correlation Heatmap")
 plt.show()
 
-
-- Outlier analysis and class imbalance check
-# Class distribution
+#  5. Outlier Analysis & Class Imbalance Check
 fraud_count = df['Class'].value_counts()[1]
 nonfraud_count = df['Class'].value_counts()[0]
 fraud_ratio = fraud_count / nonfraud_count
@@ -41,7 +53,7 @@ print(f"Valid transactions: {nonfraud_count}")
 print(f"Outlier fraction (Fraud/Non-Fraud): {fraud_ratio:.6f}")
 print(f"Fraud percentage: {round(fraud_count / len(df) * 100, 2)}%")
 
-# Amount distribution comparison
+# Amount Distribution Comparison
 plt.figure(figsize=(10, 6))
 sns.histplot(df[df.Class == 0]['Amount'], bins=50, color='blue', label='Non-Fraud', kde=True)
 sns.histplot(df[df.Class == 1]['Amount'], bins=50, color='red', label='Fraud', kde=True)
@@ -50,33 +62,54 @@ plt.xlabel("Amount")
 plt.legend()
 plt.show()
 
-- Model training with RandomForestClassifier
-rfc = RandomForestClassifier()
+#  6. Feature-Target Split & Train-Test Split
+X = df.drop('Class', axis=1)
+Y = df['Class']
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, stratify=Y, random_state=42)
+
+#  7. Model Training with Random Forest
+rfc = RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced')
 rfc.fit(X_train, Y_train)
 
-- Evaluation: accuracy, precision, recall, F1-score, MCC
+#  8. Predictions & Evaluation Metrics
+y_pred = rfc.predict(X_test)
 acc = accuracy_score(Y_test, y_pred)
 prec = precision_score(Y_test, y_pred)
 rec = recall_score(Y_test, y_pred)
 f1 = f1_score(Y_test, y_pred)
 MCC = matthews_corrcoef(Y_test, y_pred)
-
-from sklearn.metrics import roc_auc_score
 roc_auc = roc_auc_score(Y_test, rfc.predict_proba(X_test)[:,1])
-print("ROC AUC Score:", roc_auc)
 
+print(f"Accuracy:  {acc:.4f}")
+print(f"Precision: {prec:.4f}")
+print(f"Recall:    {rec:.4f}")
+print(f"F1 Score:  {f1:.4f}")
+print(f"MCC:       {MCC:.4f}")
+print(f"ROC AUC:   {roc_auc:.4f}")
+print("\nClassification Report:\n", classification_report(Y_test, y_pred))
 
-- Confusion matrix visualization
-sns.heatmap(conf_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True, fmt="d")
+#  9. Confusion Matrix Visualization
+LABELS = ['Non-Fraud', 'Fraud']
+conf_matrix = confusion_matrix(Y_test, y_pred)
+plt.figure(figsize=(6, 5))
+sns.heatmap(conf_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True, fmt="d", cmap="Blues")
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
 
-- Tree visualization using export_graphviz and pydot
+#  10. Tree Visualization (Single Estimator)
+feature_list = list(X.columns)
 tree = rfc.estimators_[5]
 export_graphviz(tree, out_file='tree.dot', feature_names=feature_list, rounded=True, precision=1)
 (graph,) = pydot.graph_from_dot_file('tree.dot')
 display(Image(graph.create_png()))
 
-- Ethical framing: feature importance, auditability
-Random Forest offers robust performance in fraud detection but lacks full interpretability. To mitigate this, we visualize individual trees and track feature importance.
-Evaluation includes fairness-aware metrics like precision, recall, and MCC to ensure balanced performance across classes. 
+#  11. Ethical Framing
+print("""
+Ethical Framing:
+Random Forest offers robust performance in fraud detection but lacks full interpretability.
+To mitigate this, we visualize individual trees and track feature importance.
+Evaluation includes fairness-aware metrics like precision, recall, and MCC to ensure balanced performance across classes.
 Future work will explore SHAP values and bias mitigation strategies to enhance transparency and trustworthiness.
-
+""")
