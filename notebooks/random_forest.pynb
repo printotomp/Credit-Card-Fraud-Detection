@@ -19,7 +19,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 #  2. Load Dataset
-df = pd.read_csv("E:\\UEL\\DS7010\\creditcard.csv")
+df = pd.read_csv("creditcard.csv")
 
 #  3. Data Exploration: Histograms
 features = df.columns[:-1]  # Exclude 'Class'
